@@ -1,3 +1,4 @@
+// pages/api/request-key.js
 import crypto from "crypto";
 
 const SERVER_SECRET = process.env.SERVER_SECRET || "please-change-this-secret";
@@ -17,19 +18,19 @@ function genDailyKey(hwid, dateStr, secret){
     .slice(0, 12).toUpperCase();
 }
 
-export default async function handler(req, res){
-  if (req.method !== "POST") {
-    res.setHeader("Allow","POST");
+export default function handler(req, res){
+  if (req.method !== "GET") {
+    res.setHeader("Allow","GET");
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { hwid } = req.body || {};
+  const { hwid } = req.query || {};
   if (!hwid) return res.status(400).json({ error: "missing hwid" });
 
   const dateStr = utcDateStr(new Date());
   const keyToday = genDailyKey(hwid, dateStr, SERVER_SECRET);
 
-  // also generate yesterday for small tolerance
+  // also generate yesterday for tolerance (not returned to browser by default but available if needed)
   const yesterday = new Date(Date.now() - 86400000);
   const keyYesterday = genDailyKey(hwid, utcDateStr(yesterday), SERVER_SECRET);
 
@@ -46,4 +47,4 @@ export default async function handler(req, res){
     expiresAt,
     alt: keyYesterday
   });
-}
+                               }
