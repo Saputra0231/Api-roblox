@@ -1,3 +1,4 @@
+// pages/api/verify.js
 import crypto from "crypto";
 
 const SERVER_SECRET = process.env.SERVER_SECRET || "please-change-this-secret";
@@ -18,24 +19,22 @@ function genDailyKey(hwid, dateStr, secret){
 }
 
 export default function handler(req, res){
-  if (req.method !== "POST") {
-    res.setHeader("Allow","POST");
+  if (req.method !== "GET") {
+    res.setHeader("Allow","GET");
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { hwid, key } = req.body || {};
-  if (notExists(hwid) || notExists(key)) return res.status(400).json({ ok:false, reason: "missing hwid or key" });
+  const { hwid, key } = req.query || {};
+  if (!hwid || !key) return res.status(400).json({ ok:false, reason: "missing hwid or key" });
 
   const today = utcDateStr(new Date());
   const yesterday = utcDateStr(new Date(Date.now() - 86400000));
 
   const expectedToday = genDailyKey(hwid, today, SERVER_SECRET);
-  if (key === expectedToday) return res.status(200).json({ ok: true, reason: "VALID" });
+  if (key === expectedToday) return res.status(200).json({ ok: true, reason: "VALID", expired: false });
 
   const expectedYesterday = genDailyKey(hwid, yesterday, SERVER_SECRET);
-  if (key === expectedYesterday) return res.status(200).json({ ok: false, reason: "EXPIRED_YESTERDAY_VALID" });
+  if (key === expectedYesterday) return res.status(200).json({ ok: false, reason: "EXPIRED_YESTERDAY_VALID", expired: true });
 
-  return res.status(200).json({ ok: false, reason: "INVALID" });
-
-  function notExists(x){ return x === undefined || x === null || x === ""; }
-    }
+  return res.status(200).json({ ok: false, reason: "INVALID", expired: true });
+}
