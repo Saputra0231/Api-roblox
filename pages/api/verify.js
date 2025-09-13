@@ -15,7 +15,7 @@ function genDailyKey(hwid, dateStr, secret){
     .update(hwid + "|" + dateStr)
     .digest("base64")
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
-    .slice(0, 12).toUpperCase();
+    .slice(0, 16).toUpperCase();
 }
 
 export default function handler(req, res){
@@ -24,8 +24,9 @@ export default function handler(req, res){
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { hwid, key } = req.query || {};
-  if (!hwid || !key) return res.status(400).json({ ok:false, reason: "missing hwid or key" });
+  const hwid = (req.query.hwid || "").toString();
+  const key = (req.query.key || "").toString();
+  if (!hwid || !key) return res.status(400).json({ ok:false, reason: "MISSING_PARAMS" });
 
   const today = utcDateStr(new Date());
   const yesterday = utcDateStr(new Date(Date.now() - 86400000));
@@ -37,4 +38,4 @@ export default function handler(req, res){
   if (key === expectedYesterday) return res.status(200).json({ ok: false, reason: "EXPIRED_YESTERDAY_VALID", expired: true });
 
   return res.status(200).json({ ok: false, reason: "INVALID", expired: true });
-}
+      }
