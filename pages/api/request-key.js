@@ -15,7 +15,7 @@ function genDailyKey(hwid, dateStr, secret){
     .update(hwid + "|" + dateStr)
     .digest("base64")
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
-    .slice(0, 12).toUpperCase();
+    .slice(0, 16).toUpperCase(); // 16 chars for better randomness (you can change)
 }
 
 export default function handler(req, res){
@@ -24,13 +24,13 @@ export default function handler(req, res){
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { hwid } = req.query || {};
+  const hwid = (req.query.hwid || "").toString();
   if (!hwid) return res.status(400).json({ error: "missing hwid" });
 
   const dateStr = utcDateStr(new Date());
   const keyToday = genDailyKey(hwid, dateStr, SERVER_SECRET);
 
-  // also generate yesterday for tolerance (not returned to browser by default but available if needed)
+  // also generate yesterday for tolerance (not returned separately here)
   const yesterday = new Date(Date.now() - 86400000);
   const keyYesterday = genDailyKey(hwid, utcDateStr(yesterday), SERVER_SECRET);
 
@@ -47,4 +47,4 @@ export default function handler(req, res){
     expiresAt,
     alt: keyYesterday
   });
-                               }
+    }
